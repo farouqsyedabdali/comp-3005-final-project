@@ -18,7 +18,10 @@ sql/VERIFY_TABLES.sql
 docs/ERD_DOCUMENTATION.md
 docs/ER_TO_RELATIONAL_MAPPING.md
 docs/NORMALIZATION.md
+docs/ERD_CONCEPTUAL.txt
 docs/ERD_DBDIAGRAM.txt
+
+misc/
 
 .vscode/
 .idea/

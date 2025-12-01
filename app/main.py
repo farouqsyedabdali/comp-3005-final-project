@@ -93,16 +93,17 @@ def member_menu():
         print("\nMEMBER MENU")
         print_separator()
         print("1. Register New Member")
-        print("2. Update Profile")
-        print("3. Add Fitness Goal")
-        print("4. Log Health Metric")
-        print("5. View Dashboard")
-        print("6. Schedule PT Session")
-        print("7. Reschedule PT Session")
-        print("8. Back to Main Menu")
+        print("2. View Profile")
+        print("3. Update Profile")
+        print("4. Add Fitness Goal")
+        print("5. Log Health Metric")
+        print("6. View Dashboard")
+        print("7. Schedule PT Session")
+        print("8. Reschedule PT Session")
+        print("9. Back to Main Menu")
         print_separator()
         
-        choice = get_int_input("Select an option (1-8): ", 1, 8)
+        choice = get_int_input("Select an option (1-9): ", 1, 9)
         
         if choice == 1:
             print("\n--- REGISTER NEW MEMBER ---")
@@ -116,6 +117,14 @@ def member_menu():
             input("\nPress Enter to continue...")
         
         elif choice == 2:
+            print("\n--- VIEW PROFILE ---")
+            members = list_members()
+            if members:
+                member_id = get_int_input("\nEnter Member ID: ")
+                member_ops.view_profile(member_id)
+            input("\nPress Enter to continue...")
+        
+        elif choice == 3:
             print("\n--- UPDATE PROFILE ---")
             members = list_members()
             if members:
@@ -126,7 +135,7 @@ def member_menu():
                 member_ops.update_profile(member_id, name, phone, address)
             input("\nPress Enter to continue...")
         
-        elif choice == 3:
+        elif choice == 4:
             print("\n--- ADD FITNESS GOAL ---")
             members = list_members()
             if members:
@@ -146,6 +155,25 @@ def member_menu():
             input("\nPress Enter to continue...")
         
         elif choice == 4:
+            print("\n--- ADD FITNESS GOAL ---")
+            members = list_members()
+            if members:
+                member_id = get_int_input("\nEnter Member ID: ")
+                print("\nGoal Types: Weight Loss, Weight Gain, Body Fat Reduction, Muscle Gain, Endurance, Flexibility")
+                goal_type = get_user_input("Goal Type: ")
+                try:
+                    target_value = float(input("Target Value: ").strip())
+                except ValueError:
+                    print("Invalid target value")
+                    input("\nPress Enter to continue...")
+                    continue
+                target_date = get_user_input("Target Date (YYYY-MM-DD): ")
+                current_input = input("Current Value (optional, press Enter to skip): ").strip()
+                current_value = float(current_input) if current_input else None
+                member_ops.add_fitness_goal(member_id, goal_type, target_value, target_date, current_value)
+            input("\nPress Enter to continue...")
+        
+        elif choice == 5:
             print("\n--- LOG HEALTH METRIC ---")
             members = list_members()
             if members:
@@ -162,7 +190,7 @@ def member_menu():
                 member_ops.log_health_metric(member_id, metric_type, value, notes)
             input("\nPress Enter to continue...")
         
-        elif choice == 5:
+        elif choice == 6:
             print("\n--- MEMBER DASHBOARD ---")
             members = list_members()
             if members:
@@ -170,7 +198,7 @@ def member_menu():
                 member_ops.view_dashboard(member_id)
             input("\nPress Enter to continue...")
         
-        elif choice == 6:
+        elif choice == 7:
             print("\n--- SCHEDULE PT SESSION ---")
             members = list_members()
             trainers = list_trainers()
@@ -185,7 +213,7 @@ def member_menu():
                 member_ops.schedule_pt_session(member_id, trainer_id, session_date, session_time, duration, room_id)
             input("\nPress Enter to continue...")
         
-        elif choice == 7:
+        elif choice == 8:
             print("\n--- RESCHEDULE PT SESSION ---")
             query = """
                 SELECT pts.session_id, pts.session_date, pts.session_time, m.name as member_name
@@ -207,7 +235,7 @@ def member_menu():
                 print("No scheduled sessions found")
             input("\nPress Enter to continue...")
         
-        elif choice == 8:
+        elif choice == 9:
             break
 
 def trainer_menu():
@@ -293,12 +321,15 @@ def admin_menu():
             if rooms and sessions:
                 print("\nScheduled PT Sessions:")
                 for s in sessions:
-                    print(f"  Session ID: {s['session_id']} - {s['member_name']} on {s['session_date']} at {s['session_time']}")
+                    time_str = str(s['session_time']).split('.')[0][:5] if s['session_time'] else 'N/A'
+                    print(f"  Session ID: {s['session_id']} - {s['member_name']} on {s['session_date']} at {time_str}")
                 room_id = get_int_input("\nEnter Room ID: ")
                 session_id = get_int_input("Enter Session ID: ")
                 session = next((s for s in sessions if s['session_id'] == session_id), None)
                 if session:
-                    admin_ops.book_room_for_session(room_id, session_id, str(session['session_date']), str(session['session_time']))
+                    session_date = str(session['session_date'])
+                    session_time = str(session['session_time']).split('.')[0][:5]
+                    admin_ops.book_room_for_session(room_id, session_id, session_date, session_time)
                 else:
                     print("Session not found")
             input("\nPress Enter to continue...")
@@ -316,12 +347,15 @@ def admin_menu():
             if rooms and classes:
                 print("\nScheduled Group Classes:")
                 for c in classes:
-                    print(f"  Class ID: {c['class_id']} - {c['class_name']} on {c['class_date']} at {c['class_time']} (Capacity: {c['capacity']})")
+                    time_str = str(c['class_time']).split('.')[0][:5] if c['class_time'] else 'N/A'
+                    print(f"  Class ID: {c['class_id']} - {c['class_name']} on {c['class_date']} at {time_str} (Capacity: {c['capacity']})")
                 room_id = get_int_input("\nEnter Room ID: ")
                 class_id = get_int_input("Enter Class ID: ")
                 cls = next((c for c in classes if c['class_id'] == class_id), None)
                 if cls:
-                    admin_ops.book_room_for_class(room_id, class_id, str(cls['class_date']), str(cls['class_time']))
+                    class_date = str(cls['class_date'])
+                    class_time = str(cls['class_time']).split('.')[0][:5]
+                    admin_ops.book_room_for_class(room_id, class_id, class_date, class_time)
                 else:
                     print("Class not found")
             input("\nPress Enter to continue...")

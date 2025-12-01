@@ -27,10 +27,9 @@ def execute_query(query, params=None, fetch=True):
     try:
         with conn.cursor(cursor_factory=RealDictCursor) as cursor:
             cursor.execute(query, params)
-            if fetch:
-                return cursor.fetchall()
+            result = cursor.fetchall() if fetch else None
             conn.commit()
-            return None
+            return result
     except psycopg2.Error as e:
         conn.rollback()
         raise e

@@ -20,7 +20,42 @@ def validate_time(time_str):
     except ValueError:
         return False
 
+def normalize_metric_type(metric_type):
+    metric_map = {
+        'weight': 'Weight',
+        'height': 'Height',
+        'heart rate': 'Heart Rate',
+        'heartrate': 'Heart Rate',
+        'body fat': 'Body Fat',
+        'bodyfat': 'Body Fat',
+        'blood pressure': 'Blood Pressure',
+        'bloodpressure': 'Blood Pressure',
+        'bmi': 'BMI'
+    }
+    normalized = metric_map.get(metric_type.lower().strip())
+    return normalized if normalized else metric_type
+
+def normalize_goal_type(goal_type):
+    goal_map = {
+        'weight loss': 'Weight Loss',
+        'weightloss': 'Weight Loss',
+        'weight gain': 'Weight Gain',
+        'weightgain': 'Weight Gain',
+        'body fat reduction': 'Body Fat Reduction',
+        'bodyfat reduction': 'Body Fat Reduction',
+        'muscle gain': 'Muscle Gain',
+        'musclegain': 'Muscle Gain',
+        'endurance': 'Endurance',
+        'flexibility': 'Flexibility'
+    }
+    normalized = goal_map.get(goal_type.lower().strip())
+    return normalized if normalized else goal_type
+
 def register_member(name, email, date_of_birth, gender=None, phone=None, address=None):
+    if not name or not name.strip():
+        print("Error: Name cannot be empty")
+        return None
+    
     if not validate_email(email):
         print("Error: Invalid email format")
         return None
@@ -90,6 +125,8 @@ def add_fitness_goal(member_id, goal_type, target_value, target_date, current_va
         print("Error: Invalid date format. Use YYYY-MM-DD")
         return False
     
+    goal_type = normalize_goal_type(goal_type)
+    
     insert_query = """
         INSERT INTO FitnessGoal (member_id, goal_type, target_value, current_value, target_date)
         VALUES (%s, %s, %s, %s, %s)
@@ -106,6 +143,13 @@ def add_fitness_goal(member_id, goal_type, target_value, target_date, current_va
         return False
 
 def log_health_metric(member_id, metric_type, value, notes=None):
+    metric_type = normalize_metric_type(metric_type)
+    
+    valid_types = ['Weight', 'Height', 'Heart Rate', 'Body Fat', 'Blood Pressure', 'BMI']
+    if metric_type not in valid_types:
+        print(f"Error: Invalid metric type. Must be one of: {', '.join(valid_types)}")
+        return False
+    
     insert_query = """
         INSERT INTO HealthMetric (member_id, metric_type, value, notes)
         VALUES (%s, %s, %s, %s)
@@ -120,6 +164,40 @@ def log_health_metric(member_id, metric_type, value, notes=None):
     except Exception as e:
         print(f"Error logging health metric: {e}")
         return False
+
+def view_profile(member_id):
+    query = """
+        SELECT member_id, name, email, date_of_birth, gender, phone, address, registration_date
+        FROM Member
+        WHERE member_id = %s
+    """
+    
+    try:
+        result = execute_query(query, (member_id,))
+        if not result:
+            print("Error: Member not found")
+            return
+        
+        member = result[0]
+        
+        print("\n" + "="*60)
+        print(f"MEMBER PROFILE - {member['name']}")
+        print("="*60)
+        print(f"\nMember ID: {member['member_id']}")
+        print(f"Name: {member['name']}")
+        print(f"Email: {member['email']}")
+        print(f"Date of Birth: {member['date_of_birth']}")
+        if member['gender']:
+            print(f"Gender: {member['gender']}")
+        if member['phone']:
+            print(f"Phone: {member['phone']}")
+        if member['address']:
+            print(f"Address: {member['address']}")
+        print(f"Registration Date: {member['registration_date']}")
+        print("="*60 + "\n")
+        
+    except Exception as e:
+        print(f"Error loading profile: {e}")
 
 def view_dashboard(member_id):
     dashboard_query = "SELECT * FROM member_dashboard_view WHERE member_id = %s"

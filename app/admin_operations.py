@@ -1,14 +1,7 @@
-"""
-Administrative Staff Operations Module
-Implements 2 admin functions:
-1. Room Booking
-2. Equipment Maintenance
-"""
 from database import execute_query, execute_update
 from datetime import datetime, date
 
 def validate_date(date_str):
-    """Validate date format YYYY-MM-DD"""
     try:
         datetime.strptime(date_str, '%Y-%m-%d')
         return True
@@ -16,24 +9,13 @@ def validate_date(date_str):
         return False
 
 def validate_time(time_str):
-    """Validate time format HH:MM"""
     try:
         datetime.strptime(time_str, '%H:%M')
         return True
     except ValueError:
         return False
 
-# ============================================
-# OPERATION 1: ROOM BOOKING
-# ============================================
-
 def check_room_double_booking(room_id, booking_date, booking_time, exclude_booking_id=None):
-    """
-    Check if room is already booked at given time.
-    
-    Returns:
-        True if double booking exists, False otherwise
-    """
     conflict_query = """
         SELECT booking_id FROM RoomBooking
         WHERE room_id = %s
@@ -51,18 +33,6 @@ def check_room_double_booking(room_id, booking_date, booking_time, exclude_booki
     return len(conflicts) > 0
 
 def book_room_for_session(room_id, session_id, booking_date, booking_time):
-    """
-    Book a room for a PT session.
-    
-    Args:
-        room_id: Room ID
-        session_id: PT Session ID
-        booking_date: Date in YYYY-MM-DD format
-        booking_time: Time in HH:MM format
-    
-    Returns:
-        booking_id if successful, None otherwise
-    """
     if not validate_date(booking_date):
         print("Error: Invalid date format. Use YYYY-MM-DD")
         return None
@@ -71,7 +41,6 @@ def book_room_for_session(room_id, session_id, booking_date, booking_time):
         print("Error: Invalid time format. Use HH:MM")
         return None
     
-    # Check if session exists
     session_query = "SELECT member_id, trainer_id FROM PersonalTrainingSession WHERE session_id = %s"
     session = execute_query(session_query, (session_id,))
     
@@ -79,12 +48,10 @@ def book_room_for_session(room_id, session_id, booking_date, booking_time):
         print("Error: PT Session not found")
         return None
     
-    # Check for double booking
     if check_room_double_booking(room_id, booking_date, booking_time):
         print("Error: Room is already booked at this time")
         return None
     
-    # Check room status
     room_query = "SELECT status, capacity FROM Room WHERE room_id = %s"
     room = execute_query(room_query, (room_id,))
     
@@ -96,7 +63,6 @@ def book_room_for_session(room_id, session_id, booking_date, booking_time):
         print(f"Error: Room is currently {room[0]['status']}")
         return None
     
-    # Create booking
     insert_query = """
         INSERT INTO RoomBooking 
         (room_id, booking_date, booking_time, booking_type, reference_id, status)
@@ -109,7 +75,6 @@ def book_room_for_session(room_id, session_id, booking_date, booking_time):
         if result:
             booking_id = result[0]['booking_id']
             
-            # Update session with room_id
             update_query = "UPDATE PersonalTrainingSession SET room_id = %s WHERE session_id = %s"
             execute_update(update_query, (room_id, session_id))
             
@@ -120,18 +85,6 @@ def book_room_for_session(room_id, session_id, booking_date, booking_time):
         return None
 
 def book_room_for_class(room_id, class_id, booking_date, booking_time):
-    """
-    Book a room for a group class.
-    
-    Args:
-        room_id: Room ID
-        class_id: Group Class ID
-        booking_date: Date in YYYY-MM-DD format
-        booking_time: Time in HH:MM format
-    
-    Returns:
-        booking_id if successful, None otherwise
-    """
     if not validate_date(booking_date):
         print("Error: Invalid date format. Use YYYY-MM-DD")
         return None
@@ -140,7 +93,6 @@ def book_room_for_class(room_id, class_id, booking_date, booking_time):
         print("Error: Invalid time format. Use HH:MM")
         return None
     
-    # Check if class exists
     class_query = "SELECT capacity, current_enrollment FROM GroupClass WHERE class_id = %s"
     cls = execute_query(class_query, (class_id,))
     
@@ -148,7 +100,6 @@ def book_room_for_class(room_id, class_id, booking_date, booking_time):
         print("Error: Group Class not found")
         return None
     
-    # Check room capacity vs class capacity
     room_query = "SELECT capacity FROM Room WHERE room_id = %s"
     room = execute_query(room_query, (room_id,))
     
@@ -160,12 +111,10 @@ def book_room_for_class(room_id, class_id, booking_date, booking_time):
         print(f"Error: Room capacity ({room[0]['capacity']}) is less than class capacity ({cls[0]['capacity']})")
         return None
     
-    # Check for double booking
     if check_room_double_booking(room_id, booking_date, booking_time):
         print("Error: Room is already booked at this time")
         return None
     
-    # Check room status
     room_status_query = "SELECT status FROM Room WHERE room_id = %s"
     room_status = execute_query(room_status_query, (room_id,))
     
@@ -173,7 +122,6 @@ def book_room_for_class(room_id, class_id, booking_date, booking_time):
         print(f"Error: Room is currently {room_status[0]['status']}")
         return None
     
-    # Create booking
     insert_query = """
         INSERT INTO RoomBooking 
         (room_id, booking_date, booking_time, booking_type, reference_id, status)
@@ -186,7 +134,6 @@ def book_room_for_class(room_id, class_id, booking_date, booking_time):
         if result:
             booking_id = result[0]['booking_id']
             
-            # Update class with room_id
             update_query = "UPDATE GroupClass SET room_id = %s WHERE class_id = %s"
             execute_update(update_query, (room_id, class_id))
             
@@ -197,13 +144,6 @@ def book_room_for_class(room_id, class_id, booking_date, booking_time):
         return None
 
 def view_room_bookings(room_id=None, booking_date=None):
-    """
-    View room bookings.
-    
-    Args:
-        room_id: Optional room ID filter
-        booking_date: Optional date filter (YYYY-MM-DD)
-    """
     query = """
         SELECT rb.booking_id, r.room_name, rb.booking_date, rb.booking_time,
                rb.booking_type, rb.reference_id, rb.status
@@ -245,14 +185,6 @@ def view_room_bookings(room_id=None, booking_date=None):
         print(f"Error viewing bookings: {e}")
 
 def view_available_rooms(booking_date, booking_time, min_capacity=None):
-    """
-    View rooms available at a specific time.
-    
-    Args:
-        booking_date: Date in YYYY-MM-DD format
-        booking_time: Time in HH:MM format
-        min_capacity: Optional minimum capacity requirement
-    """
     query = """
         SELECT r.room_id, r.room_name, r.capacity, r.status
         FROM Room r
@@ -287,27 +219,11 @@ def view_available_rooms(booking_date, booking_time, min_capacity=None):
     except Exception as e:
         print(f"Error viewing available rooms: {e}")
 
-# ============================================
-# OPERATION 2: EQUIPMENT MAINTENANCE
-# ============================================
-
 def log_equipment_issue(equipment_id, issue_description, status='Maintenance'):
-    """
-    Log a maintenance issue for equipment.
-    
-    Args:
-        equipment_id: Equipment ID
-        issue_description: Description of the issue
-        status: Status to set ('Maintenance' or 'Out of Order')
-    
-    Returns:
-        True if successful, False otherwise
-    """
     if status not in ['Maintenance', 'Out of Order']:
         print("Error: Status must be 'Maintenance' or 'Out of Order'")
         return False
     
-    # Check if equipment exists
     check_query = "SELECT equipment_name FROM Equipment WHERE equipment_id = %s"
     equipment = execute_query(check_query, (equipment_id,))
     
@@ -315,7 +231,6 @@ def log_equipment_issue(equipment_id, issue_description, status='Maintenance'):
         print("Error: Equipment not found")
         return False
     
-    # Update equipment status and notes
     update_query = """
         UPDATE Equipment
         SET status = %s,
@@ -336,18 +251,6 @@ def log_equipment_issue(equipment_id, issue_description, status='Maintenance'):
         return False
 
 def update_equipment_maintenance(equipment_id, maintenance_date=None, next_maintenance_date=None, status='Operational'):
-    """
-    Update equipment maintenance record after repair.
-    
-    Args:
-        equipment_id: Equipment ID
-        maintenance_date: Date maintenance was completed (YYYY-MM-DD)
-        next_maintenance_date: Next scheduled maintenance (YYYY-MM-DD)
-        status: New status (default 'Operational')
-    
-    Returns:
-        True if successful, False otherwise
-    """
     if status not in ['Operational', 'Maintenance', 'Out of Order']:
         print("Error: Invalid status")
         return False
@@ -388,13 +291,6 @@ def update_equipment_maintenance(equipment_id, maintenance_date=None, next_maint
         return False
 
 def view_equipment_status(room_id=None, status_filter=None):
-    """
-    View equipment status and maintenance records.
-    
-    Args:
-        room_id: Optional room ID filter
-        status_filter: Optional status filter
-    """
     query = """
         SELECT e.equipment_id, e.equipment_name, r.room_name, 
                e.status, e.last_maintenance, e.next_maintenance, e.maintenance_notes
@@ -434,16 +330,12 @@ def view_equipment_status(room_id=None, status_filter=None):
             if eq['next_maintenance']:
                 print(f"  Next Maintenance: {eq['next_maintenance']}")
             if eq['maintenance_notes']:
-                print(f"  Notes: {eq['maintenance_notes'][:100]}...")  # Truncate long notes
+                print(f"  Notes: {eq['maintenance_notes'][:100]}...")
         print()
     except Exception as e:
         print(f"Error viewing equipment: {e}")
 
 def view_equipment_needing_maintenance():
-    """
-    View equipment that needs maintenance (status is Maintenance or Out of Order,
-    or next_maintenance date is past or within 30 days).
-    """
     query = """
         SELECT e.equipment_id, e.equipment_name, r.room_name, 
                e.status, e.last_maintenance, e.next_maintenance
@@ -483,4 +375,3 @@ def view_equipment_needing_maintenance():
         print()
     except Exception as e:
         print(f"Error viewing equipment needing maintenance: {e}")
-

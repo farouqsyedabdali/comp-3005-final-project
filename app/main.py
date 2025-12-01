@@ -1,6 +1,3 @@
-"""
-Main CLI Application for Health and Fitness Club Management System
-"""
 import sys
 from database import execute_query, get_connection
 import member_operations as member_ops
@@ -8,26 +5,14 @@ import trainer_operations as trainer_ops
 import admin_operations as admin_ops
 
 def print_header():
-    """Print application header"""
     print("\n" + "="*70)
     print("  HEALTH AND FITNESS CLUB MANAGEMENT SYSTEM")
     print("="*70)
 
 def print_separator():
-    """Print separator line"""
     print("-" * 70)
 
 def get_user_input(prompt, validator=None):
-    """
-    Get user input with optional validation.
-    
-    Args:
-        prompt: Input prompt string
-        validator: Optional function to validate input
-    
-    Returns:
-        User input string
-    """
     while True:
         value = input(prompt).strip()
         if not value:
@@ -45,7 +30,6 @@ def get_user_input(prompt, validator=None):
             return value
 
 def get_int_input(prompt, min_val=None, max_val=None):
-    """Get integer input with range validation"""
     while True:
         try:
             value = int(input(prompt).strip())
@@ -60,7 +44,6 @@ def get_int_input(prompt, min_val=None, max_val=None):
             print("Please enter a valid integer")
 
 def list_members():
-    """List all members"""
     query = "SELECT member_id, name, email FROM Member ORDER BY name"
     members = execute_query(query)
     if members:
@@ -72,7 +55,6 @@ def list_members():
     return members
 
 def list_trainers():
-    """List all trainers"""
     query = "SELECT trainer_id, name, specialization FROM Trainer ORDER BY name"
     trainers = execute_query(query)
     if trainers:
@@ -84,7 +66,6 @@ def list_trainers():
     return trainers
 
 def list_rooms():
-    """List all rooms"""
     query = "SELECT room_id, room_name, capacity, status FROM Room ORDER BY room_name"
     rooms = execute_query(query)
     if rooms:
@@ -96,7 +77,6 @@ def list_rooms():
     return rooms
 
 def list_equipment():
-    """List all equipment"""
     query = "SELECT equipment_id, equipment_name, status FROM Equipment ORDER BY equipment_name"
     equipment = execute_query(query)
     if equipment:
@@ -107,12 +87,7 @@ def list_equipment():
         print("No equipment found")
     return equipment
 
-# ============================================
-# MEMBER MENU
-# ============================================
-
 def member_menu():
-    """Member operations menu"""
     while True:
         print_header()
         print("\nMEMBER MENU")
@@ -235,12 +210,7 @@ def member_menu():
         elif choice == 8:
             break
 
-# ============================================
-# TRAINER MENU
-# ============================================
-
 def trainer_menu():
-    """Trainer operations menu"""
     while True:
         print_header()
         print("\nTRAINER MENU")
@@ -291,12 +261,7 @@ def trainer_menu():
         elif choice == 5:
             break
 
-# ============================================
-# ADMIN MENU
-# ============================================
-
 def admin_menu():
-    """Admin operations menu"""
     while True:
         print_header()
         print("\nADMIN MENU")
@@ -417,13 +382,7 @@ def admin_menu():
         elif choice == 9:
             break
 
-# ============================================
-# MAIN MENU
-# ============================================
-
 def main():
-    """Main application entry point"""
-    # Test database connection
     try:
         conn = get_connection()
         conn.close()
@@ -460,4 +419,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

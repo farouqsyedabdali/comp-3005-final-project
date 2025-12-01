@@ -1,14 +1,7 @@
-"""
-Trainer Operations Module
-Implements 2 trainer functions:
-1. Set Availability
-2. Schedule View
-"""
 from database import execute_query, execute_update
 from datetime import datetime
 
 def validate_time(time_str):
-    """Validate time format HH:MM"""
     try:
         datetime.strptime(time_str, '%H:%M')
         return True
@@ -16,21 +9,10 @@ def validate_time(time_str):
         return False
 
 def day_name(day_num):
-    """Convert day number to name"""
     days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
     return days[day_num] if 0 <= day_num <= 6 else 'Invalid'
 
-# ============================================
-# OPERATION 1: SET AVAILABILITY
-# ============================================
-
 def check_availability_overlap(trainer_id, day_of_week, start_time, end_time, exclude_id=None):
-    """
-    Check if availability slot overlaps with existing slots.
-    
-    Returns:
-        True if overlap exists, False otherwise
-    """
     overlap_query = """
         SELECT availability_id FROM TrainerAvailability
         WHERE trainer_id = %s
@@ -51,18 +33,6 @@ def check_availability_overlap(trainer_id, day_of_week, start_time, end_time, ex
     return len(overlaps) > 0
 
 def add_availability(trainer_id, day_of_week, start_time, end_time):
-    """
-    Add availability slot for a trainer.
-    
-    Args:
-        trainer_id: Trainer ID
-        day_of_week: Day of week (0=Sunday, 6=Saturday)
-        start_time: Start time in HH:MM format
-        end_time: End time in HH:MM format
-    
-    Returns:
-        availability_id if successful, None otherwise
-    """
     if not validate_time(start_time):
         print("Error: Invalid start time format. Use HH:MM")
         return None
@@ -75,19 +45,16 @@ def add_availability(trainer_id, day_of_week, start_time, end_time):
         print("Error: Day of week must be 0-6 (0=Sunday, 6=Saturday)")
         return None
     
-    # Check if end_time > start_time
     start_dt = datetime.strptime(start_time, '%H:%M')
     end_dt = datetime.strptime(end_time, '%H:%M')
     if end_dt <= start_dt:
         print("Error: End time must be after start time")
         return None
     
-    # Check for overlaps
     if check_availability_overlap(trainer_id, day_of_week, start_time, end_time):
         print(f"Error: Availability overlaps with existing slot on {day_name(day_of_week)}")
         return None
     
-    # Insert availability
     insert_query = """
         INSERT INTO TrainerAvailability (trainer_id, day_of_week, start_time, end_time)
         VALUES (%s, %s, %s, %s)
@@ -106,15 +73,6 @@ def add_availability(trainer_id, day_of_week, start_time, end_time):
         return None
 
 def update_availability(availability_id, start_time=None, end_time=None):
-    """
-    Update an existing availability slot.
-    
-    Args:
-        availability_id: Availability ID to update
-        start_time: New start time (optional)
-        end_time: New end time (optional)
-    """
-    # Get current availability
     get_query = "SELECT trainer_id, day_of_week, start_time, end_time FROM TrainerAvailability WHERE availability_id = %s"
     current = execute_query(get_query, (availability_id,))
     
@@ -138,12 +96,10 @@ def update_availability(availability_id, start_time=None, end_time=None):
         print("Error: Invalid end time format. Use HH:MM")
         return False
     
-    # Check for overlaps (excluding current slot)
     if check_availability_overlap(trainer_id, day_of_week, new_start, new_end, exclude_id=availability_id):
         print(f"Error: Updated availability overlaps with another slot")
         return False
     
-    # Update
     updates = []
     params = []
     
@@ -170,12 +126,6 @@ def update_availability(availability_id, start_time=None, end_time=None):
         return False
 
 def view_availability(trainer_id):
-    """
-    View all availability slots for a trainer.
-    
-    Args:
-        trainer_id: Trainer ID
-    """
     query = """
         SELECT availability_id, day_of_week, start_time, end_time
         FROM TrainerAvailability
@@ -204,27 +154,15 @@ def view_availability(trainer_id):
     except Exception as e:
         print(f"Error viewing availability: {e}")
 
-# ============================================
-# OPERATION 2: SCHEDULE VIEW
-# ============================================
-
 def view_trainer_schedule(trainer_id):
-    """
-    View trainer's upcoming PT sessions and assigned classes.
-    
-    Args:
-        trainer_id: Trainer ID
-    """
     print(f"\n📋 Schedule for Trainer ID {trainer_id}")
     print("=" * 70)
     
-    # Get trainer name
     trainer_query = "SELECT name FROM Trainer WHERE trainer_id = %s"
     trainer = execute_query(trainer_query, (trainer_id,))
     if trainer:
         print(f"Trainer: {trainer[0]['name']}\n")
     
-    # Get PT Sessions
     sessions_query = """
         SELECT pts.session_id, pts.session_date, pts.session_time, 
                pts.duration_minutes, m.name as member_name, r.room_name
@@ -255,7 +193,6 @@ def view_trainer_schedule(trainer_id):
         
         print()
         
-        # Get Group Classes
         classes_query = """
             SELECT gc.class_id, gc.class_name, gc.class_date, gc.class_time,
                    gc.duration_minutes, gc.current_enrollment, gc.capacity, r.room_name
@@ -290,13 +227,6 @@ def view_trainer_schedule(trainer_id):
         print(f"Error viewing schedule: {e}")
 
 def lookup_member_by_name(name_search):
-    """
-    Lookup member by name (case-insensitive search).
-    Shows current goal and last metric.
-    
-    Args:
-        name_search: Name or partial name to search
-    """
     search_query = """
         SELECT m.member_id, m.name, m.email
         FROM Member m
@@ -319,7 +249,6 @@ def lookup_member_by_name(name_search):
             member_id = member['member_id']
             print(f"\n{member['name']} (ID: {member_id}, Email: {member['email']})")
             
-            # Get active goals
             goals_query = """
                 SELECT goal_type, target_value, current_value, target_date
                 FROM FitnessGoal
@@ -336,7 +265,6 @@ def lookup_member_by_name(name_search):
                     target = goal['target_value']
                     print(f"    • {goal['goal_type']}: {current} → {target} (by {goal['target_date']})")
             
-            # Get latest metric
             metric_query = """
                 SELECT metric_type, value, recorded_date
                 FROM HealthMetric
@@ -355,4 +283,3 @@ def lookup_member_by_name(name_search):
         
     except Exception as e:
         print(f"Error looking up member: {e}")
-
